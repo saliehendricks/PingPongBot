@@ -18,13 +18,17 @@
 #include <ESP8266WebServer.h>     //Local WebServer used to serve the configuration portal
 #include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager WiFi Configuration Magic
 
+/********************
+ Constant Definition
+********************/
+
 //define the motor pins
-int MTOP_PIN   = 3;
+#define MTOP_PIN  D3
 int MLEFT_PIN  = 4;
 int MRIGHT_PIN = 5;
 int MFEED_PIN  = 6;
 
-// //define LED pins
+//define LED pins
  #define LEDPINA 12;
 
 //define runtime objects
@@ -36,7 +40,7 @@ Servo rightSpin;
 void setup() 
 {
 
-    Serial.begin(115000);
+    Serial.begin(115200);
 
     //setup wifi
     Serial.println("Should save config");
@@ -44,8 +48,8 @@ void setup()
         
     //setup 3 launcher motors
     topSpin.attach(MTOP_PIN,1000,2000);
-    leftSpin.attach(MTOP_PIN,1000,2000);
-    rightSpin.attach(MTOP_PIN,1000,2000);
+    leftSpin.attach(MRIGHT_PIN,1000,2000);
+    rightSpin.attach(MFEED_PIN,1000,2000);
 
     //setup 1 feeder motor
     
@@ -58,21 +62,26 @@ void loop()
 
 //Setup the system for topSpin at a specified speed
 //m|l|h (medium, low or high)
-void setTopSpin(char m = 'm')
+void setTopSpin(char speed = 'm')
 {
     //set topspin speed
     //reduce left/right speeds    
 }
 
-void setBackSpin(char m = 'm')
+void setBackSpin(char speed = 'm')
 {
     //reduce topspin speed
     //increase left/right speeds equal amounts
 }
 
-void setSideSpinChop(char m = 'm')
+void setSideSpinChop(char speed = 'm')
 {
     //reduce topspin speed
     //increase left speeds
     //reduce right speed
+}
+
+void setDrill(String drillSquence, char speed = 'm')
+{
+    
 }
