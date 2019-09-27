@@ -21,10 +21,9 @@
 ********************/
 
 //define the motor pins
-#define MTOP_PIN D6
-int MLEFT_PIN = 4;
-int MRIGHT_PIN = 5;
-int MFEED_PIN = 6;
+#define MTOP_PIN D5
+#define MLEFT_PIN D6
+#define MRIGHT_PIN D7
 
 //define runtime objects
 WiFiManager wifiManager;
@@ -50,10 +49,7 @@ void setup()
 
     Serial.begin(115200);
     Serial.println("Starting up");
-
-    pinMode(D0, OUTPUT);
-    pinMode(D4, OUTPUT);
-
+    
     //setup wifi
     Serial.println("..");
     wifiManager.autoConnect("PROTEA-TERMINATOR");
@@ -86,24 +82,25 @@ void setup()
 
     //setup 3 launcher motors
     topSpin.attach(MTOP_PIN,1000,2000);
-    //leftSpin.attach(MRIGHT_PIN,1000,2000);
-    //rightSpin.attach(MFEED_PIN,1000,2000);
+    leftSpin.attach(MLEFT_PIN,1000,2000);
+    rightSpin.attach(MRIGHT_PIN,1000,2000);
 
-    //setup 1 feeder motor
+    Serial.println("Launch Motors ready");
+    //TODO setup 1 feeder stepper motor
+
+    //Serial.println("Feeder ready");
 }
 
 void loop()
 {
     server.handleClient();
+    
+    handleStepper();
+}
 
-    digitalWrite(D0, LOW);  // Turn the LED on (Note that LOW is the voltage level
-    digitalWrite(D4, HIGH); // Turn the LED on (Note that LOW is the voltage level
-    // but actually the LED is on; this is because
-    // it is active low on the ESP-01)
-    delay(1000);            // Wait for a second
-    digitalWrite(D0, HIGH); // Turn the LED off by making the voltage HIGH
-    digitalWrite(D4, LOW);  // Turn the LED on (Note that LOW is the voltage level
-    delay(2000);
+void handleStepper()
+{
+    //TODO stepper feeder turn
 }
 
 //Setup the system for topSpin at a specified speed
@@ -158,19 +155,27 @@ void handleSetMotor()
     }
     else if (m == "left")
     {
+        topSpeed = speed;
+        leftSpin.write(topSpeed);
     }
     else if (m == "right")
     {
+        topSpeed = speed;
+        rightSpin.write(topSpeed);
     }
     else if (m == "leftandright")
     {
+        topSpeed = speed;
+        leftSpin.write(topSpeed);
+        rightSpin.write(topSpeed);
     }
     else if (m == "feeder")
     {
     }
+
     Serial.print(" motor speed set to ");
     Serial.println(speed);
-    server.send(200, "text/plain", "ok");
+    server.send(200, "text/plain",String(speed));
 }
 
 String getContentType(String filename)
