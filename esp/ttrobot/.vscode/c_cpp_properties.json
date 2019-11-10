@@ -2,12 +2,12 @@
     "configurations": [
         {
             "name": "Win32",
-            "includePath": [                
-                "C:\\Users\\salie\\AppData\\Local\\Arduino15\\packages\\esp8266\\tools\\**",
-                "C:\\Users\\salie\\AppData\\Local\\Arduino15\\packages\\esp8266\\hardware\\esp8266\\2.4.2\\**",
+            "includePath": [
                 "${workspaceFolder}/**",
-                "C:/Users/salie/AppData/Local/Arduino15/packages/esp8266/hardware/esp8266/2.4.2/libraries/Servo/src"
-                
+                "C:\\Users\\Salie\\AppData\\Local\\Arduino15\\packages\\esp8266\\hardware\\esp8266\\2.4.2\\libraries\\ESP8266WiFi\\src",
+                "C:/Users/salie/AppData/Local/Arduino15/packages/esp8266/hardware/esp8266/2.4.2/libraries/Servo/src",
+                "C:\\Users\\Salie\\AppData\\Local\\Arduino15\\packages\\esp8266\\hardware\\esp8266\\2.4.2\\**",
+                "C:\\Users\\Salie\\AppData\\Local\\Arduino15\\packages\\esp8266\\tools\\**"
             ],
             "defines": [
                 "_DEBUG",

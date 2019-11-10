@@ -24,7 +24,7 @@ char data;
 /**
  * Initialisation routine
  */
-void setup() {
+void setup1() {
     Serial.begin(115200);
     
     //motA.attach(4, MIN_PULSE_LENGTH, MAX_PULSE_LENGTH);
@@ -38,7 +38,7 @@ void setup() {
 /**
  * Main function
  */
-void loop() {
+void loop1() {
     if (Serial.available()) {
         data = Serial.read();
 

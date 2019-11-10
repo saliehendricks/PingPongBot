@@ -15,7 +15,7 @@
 #include <ESP8266WebServer.h> //Local WebServer used to serve the configuration portal
 #include <Servo.h>
 #include <FS.h> // Include the SPIFFS library
-
+#include <Stepper.h>
 /********************
  Constant Definition
 ********************/
@@ -24,6 +24,13 @@
 #define MTOP_PIN D5
 #define MLEFT_PIN D6
 #define MRIGHT_PIN D7
+#define STEPS 2048
+#define IN1 D1
+#define IN2 D2
+#define IN3 D3
+#define IN4 D4
+#define MIN_PULSE_LENGTH 1000 // Minimum pulse length in µs
+#define MAX_PULSE_LENGTH 2000 // Maximum pulse length in µs
 
 //define runtime objects
 WiFiManager wifiManager;
@@ -37,6 +44,12 @@ int topSpeed = 15;
 int leftSpeed = 15;
 int rightSpeed = 15;
 
+//stepper definitions
+long stepinterval = 4; //millisecs
+unsigned long previousMillis = 0;
+
+Stepper stepper(STEPS, IN4, IN2, IN3, IN1);
+
 File fsUploadFile; // a File object to temporarily store the received file
 
 String getContentType(String filename); // convert the file extension to the MIME type
@@ -49,7 +62,7 @@ void setup()
 
     Serial.begin(115200);
     Serial.println("Starting up");
-    
+
     //setup wifi
     Serial.println("..");
     wifiManager.autoConnect("PROTEA-TERMINATOR");
@@ -66,7 +79,7 @@ void setup()
               handleFileUpload            // Receive and save the file
     );
 
-    server.on("/setmotor",handleSetMotor);
+    server.on("/setmotor", handleSetMotor);
 
     server.onNotFound([]() {                                  // If the client requests any URI
         if (!handleFileRead(server.uri()))                    // send it if it exists
@@ -81,26 +94,53 @@ void setup()
     Serial.println("File system started");
 
     //setup 3 launcher motors
-    topSpin.attach(MTOP_PIN,1000,2000);
-    leftSpin.attach(MLEFT_PIN,1000,2000);
-    rightSpin.attach(MRIGHT_PIN,1000,2000);
+    topSpin.attach(MTOP_PIN, MIN_PULSE_LENGTH, MAX_PULSE_LENGTH);
+    leftSpin.attach(MLEFT_PIN, MIN_PULSE_LENGTH, MAX_PULSE_LENGTH);
+    rightSpin.attach(MRIGHT_PIN, MIN_PULSE_LENGTH, MAX_PULSE_LENGTH);
+
+    topSpin.writeMicroseconds(MIN_PULSE_LENGTH);
+    leftSpin.writeMicroseconds(MIN_PULSE_LENGTH);
+    rightSpin.writeMicroseconds(MIN_PULSE_LENGTH);
 
     Serial.println("Launch Motors ready");
     //TODO setup 1 feeder stepper motor
+    pinMode(IN1, OUTPUT);
+    pinMode(IN2, OUTPUT);
+    pinMode(IN3, OUTPUT);
+    pinMode(IN4, OUTPUT);
 
-    //Serial.println("Feeder ready");
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, LOW);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, LOW);
+
+    Serial.println("Feeder ready");
+
 }
 
 void loop()
 {
     server.handleClient();
-    
+
     handleStepper();
 }
 
 void handleStepper()
 {
-    //TODO stepper feeder turn
+    //stepper feeder turn
+    if (stepinterval <= 0)
+    {
+        stepinterval = 0;
+        return;
+    }
+    unsigned long currentMillis = millis();
+
+    if (currentMillis - previousMillis >= stepinterval)
+    {
+        // save the last time we stepped
+        previousMillis = currentMillis;
+        stepper.step(1);
+    }
 }
 
 //Setup the system for topSpin at a specified speed
@@ -128,11 +168,10 @@ void setDrill(String drillSquence, char speed = 'm')
 {
 }
 
-
 void handleSetMotor()
 {
     Serial.println("handleSetMotor:");
-    if(!server.hasArg("m") || !server.hasArg("s"))
+    if (!server.hasArg("m") || !server.hasArg("s"))
     {
         Serial.println(" no motors adjusted");
         return;
@@ -140,43 +179,69 @@ void handleSetMotor()
 
     String m = server.arg("m");
     String s = server.arg("s");
-    int speed = s.toInt();
-    if (speed > 80)
-        speed = 80;
-    if (speed < 15)
-        speed = 15;
-
-    Serial.print(m);
+    long speed = s.toInt();
+    
     if (m == "top")
     {
-        //topSpin.write(speed);
-        topSpeed = speed;
-        topSpin.write(topSpeed);
+        speed = adjustSpeedForLaunchers(speed);        
+        topSpin.writeMicroseconds(speed);        
     }
     else if (m == "left")
     {
-        topSpeed = speed;
-        leftSpin.write(topSpeed);
+        speed = adjustSpeedForLaunchers(speed);                
+        leftSpin.writeMicroseconds(speed);
     }
     else if (m == "right")
     {
-        topSpeed = speed;
-        rightSpin.write(topSpeed);
+        speed = adjustSpeedForLaunchers(speed);        
+        rightSpin.writeMicroseconds(speed);
     }
     else if (m == "leftandright")
     {
-        topSpeed = speed;
-        leftSpin.write(topSpeed);
-        rightSpin.write(topSpeed);
+        speed = adjustSpeedForLaunchers(speed);        
+        leftSpin.writeMicroseconds(speed);
+        rightSpin.writeMicroseconds(speed);
     }
-    else if (m == "feeder")
+    else if (m == "fi")
     {
+        speed = adjustSpeedForFeeder(speed);        
+        stepinterval = speed;        
     }
 
     Serial.print(" motor speed set to ");
     Serial.println(speed);
-    server.send(200, "text/plain",String(speed));
+    server.send(200, "text/plain", String(speed));
 }
+
+long adjustSpeedForLaunchers(long speed)
+{
+    if (speed > MAX_PULSE_LENGTH)
+    {
+        speed = MAX_PULSE_LENGTH;
+    }
+    if (speed < MIN_PULSE_LENGTH)
+    {
+        speed = MIN_PULSE_LENGTH;
+    }
+    Serial.print(speed);
+    return speed;
+}
+
+long adjustSpeedForFeeder(long speed)
+{
+    if (speed < 2)
+    {
+        speed = 0;
+    }
+    else if (speed > 100)
+    {
+        speed = 100;
+    }
+    
+    Serial.print(speed);
+    return speed;
+}
+
 
 String getContentType(String filename)
 { // convert the file extension to the MIME type
@@ -192,7 +257,6 @@ String getContentType(String filename)
         return "application/x-gzip";
     return "text/plain";
 }
-
 
 bool handleFileRead(String path)
 { // send the right file to the client (if it exists)
